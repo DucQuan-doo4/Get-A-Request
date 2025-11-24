@@ -1,5 +1,5 @@
 {
-  "name": "techstart-api",
+  "name": "startup",
   "version": "1.0.0",
   "description": "API for Get-A-Request App",
   "main": "server.js",
