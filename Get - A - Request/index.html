@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechStart Inc. - Get a Quote</title>
+    <title>Startup - Get a Request</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 20px; }
        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -22,19 +22,25 @@
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to TechStart Inc.</h1>
+        <h1>Welcome to Startup</h1>
         <p>Please fill out the form below to request a quote for our services.</p>
 
-        <h2>Request a Quote</h2>
+        <h2>Request a Request</h2>
         <form id="quoteForm">
             <input type="text" id="customer_name" placeholder="Your Name" required>
             <input type="email" id="email" placeholder="Your Email" required>
             <select id="service_needed" required>
                 <option value="">-- Select a Service --</option>
-                </select>
+                <option value="it">IT Helpdesk</option>
+                <option value="web_dev">Web Development</option>
+                <option value="mobile_dev">Mobile Development</option>
+                <option value="graphic_design">Graphic Design</option>
+                <option value="seo">SEO / Digital Marketing</option>
+            </select>
             <textarea id="details" placeholder="Project Details"></textarea>
             <button type="submit">Submit Request</button>
         </form>
+
         <div id="message"></div>
 
         <h2>Submitted Quotes</h2>
