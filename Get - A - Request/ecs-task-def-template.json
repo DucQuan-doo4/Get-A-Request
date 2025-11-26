@@ -1,0 +1,23 @@
+{
+  "family": "...",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "#name_container",
+      "image": "name_image:<IMAGE_TAG>",
+      "memory": 512,
+      "cpu": 256,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3000, #neu app chay o cong khac thi thay 2 gia tri nay
+          "hostPort": 3000
+        }
+      ]
+    }
+  ],
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::#id_account_aws:role/ecsTaskExecutionRole"
+}
