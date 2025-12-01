@@ -1,132 +1,134 @@
-# System Architecture
+#  Kiến Trúc Hệ Thống Get-A-Request
 
-![System Architecture](images/get.png)
+Tài liệu này mô tả toàn bộ kiến trúc, luồng nghiệp vụ, hạ tầng AWS và CI/CD của ứng dụng **Get-A-Request** theo mô hình chuẩn doanh nghiệp.
 
-## Overview
+---
 
-This document describes the system architecture for the application, including AWS infrastructure, networking, deployment pipeline, and data flow.
+##  1. Tổng Quan Hệ Thống
 
-## Architecture Diagram
+Ứng dụng bao gồm:
 
-Below is the system architecture diagram:
+* **Front-end** (S3 + CloudFront)
+* **Back-end API** (ECS Fargate + ALB)
+* **Database** (Amazon RDS MySQL)
+* **Quản trị hệ thống & phân tích log**
+* **DBA kết nối bảo mật qua Bastion Host**
+* **CI/CD Jenkins chạy trên EC2 và tích hợp GitHub Webhook**
+
+---
+
+##  2. Sơ Đồ Kiến Trúc Hệ Thống
 
 ![System Architecture](./images/get.png)
 
-## Components
+---
 
-### 1. **User & Admin**
+##  3. Luồng Nghiệp Vụ
 
-* Users interact with the system through a web or mobile interface.
-* Admins manage infrastructure and services using secure access via SSH.
-
-### 2. **Amazon Route 53**
-
-* Handles DNS routing for end‑user traffic.
-
-### 3. **CloudFront**
-
-* Serves static content from S3.
-* Improves performance using CDN caching.
-
-### 4. **Amazon S3**
-
-* Stores static assets.
-* Stores logs and artifacts.
-
-### 5. **VPC (Virtual Private Cloud)**
-
-Contains:
-
-* Public Subnet (NAT Gateway, ALB, Bastion Host)
-* Private Subnet (ECS, API services)
-* Private Subnet (Amazon RDS)
-
-### 6. **Application Load Balancer (ALB)**
-
-* Routes traffic to ECS services.
-
-### 7. **NAT Gateway**
-
-* Enables outbound internet for ECS tasks.
-
-### 8. **Bastion Host**
-
-* Used for secure SSH access to private resources.
-
-### 9. **Amazon ECS (Fargate or EC2)**
-
-* Runs the API service.
-* Pulls container images from ECR.
-
-### 10. **Amazon RDS**
-
-* Stores relational data.
-
-### 11. **CloudWatch**
-
-* Collects logs and system metrics.
-
-### 12. **CloudTrail**
-
-* Tracks API calls and governance logs.
+Hệ thống bao gồm **4 luồng hoạt động chính**:
 
 ---
 
-## API Endpoints
+### 🔹 **Luồng 1 – Người dùng truy cập giao diện (Front-end)**
 
-All routes have been updated to use `get-a-request` instead of `get-a-quote`.
+Người dùng truy cập website nhanh chóng và an toàn từ mọi nơi.
 
-Example:
+**Luồng dữ liệu:**
 
-* `POST /api/v1/get-a-request`
-* `GET /api/v1/get-a-request/:id`
-* `PUT /api/v1/get-a-request/:id`
-* `DELETE /api/v1/get-a-request/:id`
-
----
-
-## Deployment Flow
-
-1. Developer pushes code to GitHub.
-2. CI/CD pipeline builds and pushes Docker image to ECR.
-3. ECS pulls the latest version and deploys.
-
-Git push command:
-
-```bash
-git add .
-git commit -m "update get-a-request routes and add architecture readme"
-git push origin main
+```
+Client → Route 53 / CloudFront → S3
 ```
 
+* CloudFront làm CDN tăng tốc và bảo mật.
+* Website tĩnh được lưu trên S3.
+* Route 53 (optional) cấu hình domain tùy theo nhu cầu.
+
 ---
 
-## CI/CD Pipeline with Jenkins
+### 🔹 **Luồng 2 – Người dùng gửi Yêu cầu (Back-end API)**
 
-The system uses a **Jenkins‑based CI/CD pipeline** to automate building, testing, containerizing, and deploying the application to AWS.
+Khách hàng nhập thông tin, API xử lý và lưu vào CSDL.
 
-### **CI (Continuous Integration)**
+**Luồng dữ liệu:**
 
-* Developer pushes code to GitHub.
-* Jenkins automatically triggers a pipeline upon webhook event.
-* Steps:
+```
+Client → CloudFront (cache) → ALB → ECS Task (API) → RDS MySQL
+```
 
-  * Pull latest source code.
-  * Install dependencies.
-  * Run automated tests.
-  * Build Docker image.
-  * Tag and push the image to **Amazon ECR**.
+* ALB định tuyến request đến ECS.
+* ECS chạy container API.
+* Dữ liệu được lưu an toàn vào RDS.
 
-### **CD (Continuous Deployment)**
+---
 
-Once the new Docker image is pushed to ECR:
+### 🔹 **Luồng 3 – Quản trị viên xem Log truy cập**
 
-* Jenkins triggers deployment scripts.
-* ECS Service pulls the new image.
-* Rolling update ensures zero‑downtime deployment.
-* CloudWatch monitors health during rollout.
+Dùng cho mục đích bảo mật và phân tích hành vi người dùng.
 
-### **Jenkinsfile**
+**Luồng dữ liệu:**
+
+```
+Admin → S3 Bucket (CloudFront Logs)
+```
+
+* CloudFront ghi log vào S3 tự động.
+* Admin xem log thông qua IAM policy.
+
+---
+
+### 🔹 **Luồng 4 – DBA quản trị cơ sở dữ liệu**
+
+Bảo đảm kết nối **không lộ ra Internet**.
+
+**Luồng dữ liệu:**
+
+```
+Admin → SSH → Bastion Host → MySQL Client → RDS
+```
+
+* Bastion Host nằm trong Public Subnet.
+* RDS nằm trong Private Subnet.
+* DBA chỉ kết nối qua SSH tunnel.
+
+---
+
+## 4. Thành phần AWS
+
+* Route 53 – DNS
+* CloudFront – CDN + Cache
+* S3 – Static hosting & logs
+* VPC – Public & Private Subnet
+* ALB – Reverse proxy cho API
+* ECS Fargate – API container
+* ECR – Lưu Docker image
+* RDS MySQL – Cơ sở dữ liệu
+* Bastion Host – SSH access
+* IAM – Bảo mật truy cập
+* CloudWatch – Monitoring
+* CloudTrail – Audit logs
+
+---
+
+##  5. CI/CD Pipeline với Jenkins (EC2)
+
+Hệ thống sử dụng **một EC2 riêng** chạy Jenkins.
+
+### Luồng hoạt động CI/CD:
+
+```
+GitHub → Webhook → Jenkins EC2 → Build Docker Image → Push ECR → ECS Deploy
+```
+
+### Quy trình chi tiết:
+
+1. Developer push code lên GitHub
+2. GitHub gửi Webhook đến Jenkins
+3. Jenkins pull source và build Docker image
+4. Jenkins push image lên Amazon ECR
+5. Jenkins chạy lệnh cập nhật ECS Service
+6. ECS thực hiện rolling update
+
+### Jenkinsfile mẫu:
 
 ```groovy
 pipeline {
@@ -220,3 +222,26 @@ pipeline {
     }
 
 } // <-- đóng pipeline
+
+---
+
+##  6. API Endpoints
+
+```
+POST    /api/v1/get-a-request
+GET     /api/v1/get-a-request/:id
+PUT     /api/v1/get-a-request/:id
+DELETE  /api/v1/get-a-request/:id
+```
+
+---
+
+## 7. Ghi chú triển khai
+
+* ECS production nên đặt trong private subnet nhưng trong lab này ở môi trường dev/test nên có thể để ở public subnet.
+* RDS luôn nằm private subnet.
+* Bastion Host chỉ mở SSH từ IP admin.
+* Jenkins EC2 nên tách security group riêng và hạn chế SSH.
+
+---
+
