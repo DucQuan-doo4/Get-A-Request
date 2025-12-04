@@ -223,18 +223,14 @@ pipeline {
 
 } // <-- đóng pipeline
 
----
 
 ##  6. API Endpoints
 
-```
 POST    /api/v1/get-a-request
 GET     /api/v1/get-a-request/:id
 PUT     /api/v1/get-a-request/:id
 DELETE  /api/v1/get-a-request/:id
-```
 
----
 
 ## 7. Ghi chú triển khai
 
@@ -243,5 +239,4 @@ DELETE  /api/v1/get-a-request/:id
 * Bastion Host chỉ mở SSH từ IP admin.
 * Jenkins EC2 nên tách security group riêng và hạn chế SSH.
 
----
 
